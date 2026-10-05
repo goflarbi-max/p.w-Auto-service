@@ -1,0 +1,14 @@
+id,estimate_id,item_type,description,part_id,quantity,unit_price
+1,1,Labour,Ignition diagnostics,,1,350.00
+2,1,Part,Spark plugs,6,4,185.00
+3,2,Labour,Air suspension diagnosis and replacement,,1,650.00
+4,2,Part,Air suspension compressor,10,1,8500.00
+5,3,Labour,Air suspension diagnosis and replacement,,1,650.00
+6,3,Part,Air suspension compressor,10,1,8200.00
+7,4,Labour,AC leak repair and recharge,,1,850.00
+8,4,Part,AC refrigerant,8,1,700.00
+9,5,Labour,Front brake pad replacement,,1,900.00
+10,5,Part,Front brake pad set,3,1,2950.00
+11,6,Labour,Annual service labour,,1,1200.00
+12,6,Part,Engine oil filter,1,1,420.00
+13,6,Part,Synthetic engine oil,2,8,140.00

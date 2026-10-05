@@ -1,0 +1,7 @@
+id,job_no,appointment_id,customer_id,vehicle_id,technician_id,mileage,customer_complaint,current_condition,inspection_notes,diagnosis,date_received,expected_delivery,date_delivered,status,labour_cost,parts_total,tax_rate,tax_amount,total_cost
+1,PW-JC-2026-0001,6,1,2,1,48210,Noise from front suspension,Minor scratches on left rear door,Initial road test pending,,2026-10-05,2026-10-08,,Received,0.00,0.00,0.00,0.00,0.00
+2,PW-JC-2026-0002,5,5,7,1,63880,Engine misfire under load,Body and glass in good condition,Fault codes captured,Cylinder three ignition fault,2026-10-03,2026-10-07,,Diagnosed,350.00,0.00,0.00,0.00,350.00
+3,PW-JC-2026-0003,3,3,4,1,71450,Vehicle sits low overnight,Front bumper stone chips,Air suspension leak test completed,Weak compressor and right front air line leak,2026-09-28,2026-10-09,,Estimate Sent,650.00,8200.00,0.00,0.00,8850.00
+4,PW-JC-2026-0004,4,4,5,1,52600,AC not cooling,Roof fabric lightly faded,Pressure and leak test completed,Low refrigerant with valve seal leak,2026-10-01,2026-10-06,,In Progress,850.00,700.00,0.00,0.00,1550.00
+5,PW-JC-2026-0005,2,2,3,1,45990,Brake warning light,Small dent on right front wing,Pads and discs inspected,Front pads below service limit,2026-09-24,2026-10-05,,Ready for Delivery,900.00,2950.00,0.00,0.00,3850.00
+6,PW-JC-2026-0006,1,1,1,1,38250,Routine annual service,Vehicle received clean,Full inspection completed,Annual service completed with no additional faults,2026-09-21,2026-09-22,2026-09-22,Delivered,1200.00,1540.00,0.00,0.00,2740.00

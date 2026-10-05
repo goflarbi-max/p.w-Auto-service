@@ -1,0 +1,4 @@
+id,invoice_no,job_card_id,issue_date,labour_total,parts_total,tax_amount,total,payment_status,amount_paid,notes
+1,PW-INV-2026-0001,4,2026-10-02,850.00,700.00,0.00,1550.00,Partial,800.00,Balance due on collection
+2,PW-INV-2026-0002,5,2026-09-25,900.00,2950.00,0.00,3850.00,Unpaid,0.00,Payment due on delivery
+3,PW-INV-2026-0003,6,2026-09-22,1200.00,1540.00,0.00,2740.00,Paid,2740.00,Paid in full

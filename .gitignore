@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.streamlit/secrets.toml
+
+# DuckDB runtime data (sample CSV files remain tracked)
+*.duckdb
+*.duckdb.wal
+*.wal
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

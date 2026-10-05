@@ -1,0 +1,6 @@
+id,customer_id,vehicle_id,last_service_date,next_service_date,reminder_sent,reminder_sent_at,status
+1,1,1,2026-09-22,2027-09-22,false,,Pending
+2,2,3,2026-09-25,2027-03-25,false,,Pending
+3,4,6,2025-10-15,2026-10-15,true,2026-10-01 09:00:00,Sent
+4,5,8,2025-11-10,2026-11-10,false,,Failed
+5,3,4,2025-08-04,2026-08-04,false,,Cancelled

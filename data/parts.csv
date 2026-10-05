@@ -1,0 +1,11 @@
+id,part_name,part_number,brand,type,quantity,cost_price,selling_price,supplier,reorder_level,needs_ordering
+1,Engine Oil Filter,9A110722400,Porsche,Genuine,3,280.00,420.00,Stuttgart Parts GH,5,false
+2,Synthetic Engine Oil 1L,0W40-MOBIL1,Mobil,Aftermarket,24,95.00,140.00,Auto Fluids Ghana,12,false
+3,Front Brake Pad Set,9Y0698151,Porsche,Genuine,1,2200.00,2950.00,Stuttgart Parts GH,2,false
+4,Rear Brake Pad Set,95B698451,Porsche,Genuine,0,1850.00,2500.00,Stuttgart Parts GH,2,true
+5,Cabin Air Filter,971819429,Porsche,Genuine,5,390.00,580.00,Euro Parts Accra,3,false
+6,Spark Plug,06K905601D,Bosch,Aftermarket,20,120.00,185.00,Bosch Auto Ghana,12,false
+7,AGM Battery 95Ah,BAT-AGM-95,Varta,Aftermarket,2,2100.00,2750.00,Power Cell Ghana,2,false
+8,AC Refrigerant R134a 1kg,R134A-1KG,Emirates Gas,Aftermarket,4,450.00,700.00,CoolTech Supplies,2,false
+9,Wiper Blade Set,WB-24-20,Bosch,Aftermarket,7,260.00,400.00,Bosch Auto Ghana,3,false
+10,Air Suspension Compressor,970358151,Porsche,Genuine,1,6800.00,8200.00,,1,true

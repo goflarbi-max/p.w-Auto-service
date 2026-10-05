@@ -1,0 +1,7 @@
+id,source,appointment_date,customer_id,vehicle_id,notes,status
+1,Call,2026-09-21,1,1,Routine annual service,Completed
+2,WhatsApp,2026-09-24,2,3,Brake warning light,Completed
+3,Walk-in,2026-09-28,3,4,Vehicle sits low overnight,Completed
+4,Call,2026-10-01,4,5,AC not cooling,Completed
+5,WhatsApp,2026-10-03,5,7,Engine misfire under load,Completed
+6,Walk-in,2026-10-05,1,2,Noise from front suspension,Arrived

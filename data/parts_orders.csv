@@ -1,0 +1,5 @@
+id,part_id,quantity_ordered,quantity_received,unit_cost,supplier,ordered_date,expected_date,received_date,status,notes
+1,4,4,0,1850.00,Stuttgart Parts GH,2026-10-02,2026-10-09,,Ordered,Urgent rear brake stock
+2,1,10,5,280.00,Stuttgart Parts GH,2026-09-30,2026-10-04,,Partially Received,Balance expected next shipment
+3,8,6,6,450.00,CoolTech Supplies,2026-09-20,2026-09-22,2026-09-22,Received,Received in good condition
+4,10,1,0,6800.00,,2026-10-02,2026-10-12,,Ordered,Awaiting supplier confirmation
