@@ -1,9 +1,9 @@
-# P.W Auto Service — Database Foundation
+# P.W Auto Service — Workshop Management System
 
-Phase 1 provides the DuckDB schema, realistic sample data, reporting views,
-database connection lifecycle, and a provider-neutral mock SMS service. It does
-not contain authentication, invoice rendering, or real SMS integration. Phase 3
-adds a mobile-first Streamlit workshop UI over the service layer.
+The project includes the DuckDB database foundation, transaction-safe service
+layer, mobile-first Streamlit interface, operational dashboard, and branded PDF
+documents for job cards, estimates, and invoices. SMS remains in mock mode and
+authentication is reserved for a later phase.
 
 ## Requirements
 
@@ -85,14 +85,13 @@ custom domain can route to the application hosted on the same VPS.
 ## Business configuration
 
 Business identity, the Weija office address, telephone number, GHS currency, and
-the placeholder path `assets/logo_placeholder.png` are defined in
-`src/config.py`. The actual logo can be placed at that path later without a
-database migration.
+the logo path `assets/logo_placeholder.png` are defined in `src/config.py`. The
+configured P.W Auto Service logo is used by the app and generated documents.
 
 ## Service layer
 
-Phase 2 keeps business rules in `src/services/`; a future UI should call these
-functions instead of executing SQL. Services accept a DuckDB connection, return
+Business rules remain in `src/services/`; the UI calls these functions instead
+of executing SQL. Services accept a DuckDB connection, return
 plain dictionaries (or DataFrames for dashboards), use `Decimal` for money, and
 wrap multi-table writes in rollback-safe transactions.
 
@@ -127,17 +126,17 @@ service layer for writes.
 
 ## Streamlit pages
 
-- Home: operational counts, quick actions, today's appointments, and deliveries
+- Dashboard: first/default page with operational KPIs, job trends, revenue, parts usage, and orders
 - Job Cards: creation, workflow, diagnosis, estimates, parts, invoices, and history
 - Customers & Vehicles: customer records, vehicles, and service history
 - Appointments: scheduling, cancellation, and arrival conversion
 - Parts & Inventory: catalogue, stock, reorder flags, orders, and receipts
 - Reminders: upcoming reminders and mock SMS processing
 - Settings: Admin-only read-only business and user information
-- Dashboard: Admin/Manager KPIs, job trends, revenue, parts usage, and orders
 
-No Phase 4 dashboard charts or PDF/print output are included. The Print/PDF
-control is deliberately disabled and marked as coming soon.
+Dashboard is the first and default navigation item for Admin/Manager users.
+Technicians default to Job Cards because revenue reports are permission
+restricted. Light and dark palettes are available from Streamlit's Theme menu.
 
 ### Test on a phone over the local network
 
@@ -158,9 +157,9 @@ The Job Card page provides downloads for invoices, estimate versions, populated
 job cards, and a printable blank job card. Generators live in `src/documents/`
 and return PDF bytes; UI pages do not construct document layouts or query data.
 
-Sample PDFs are generated under `docs/samples/`. To add the workshop logo,
-replace `assets/logo_placeholder.png` with the real PNG. If the file is absent
-or invalid, documents safely use the business name as text.
+Sample PDFs are generated under `docs/samples/` and include the configured
+workshop logo aligned in the document header. If the logo file is absent or
+invalid, documents safely use the business name as text.
 
 Document settings are in `src/config.py`:
 

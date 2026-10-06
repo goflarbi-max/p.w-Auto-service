@@ -64,7 +64,9 @@ def render() -> None:
         st.error("Dashboard reports are available to Admin and Manager roles only.")
         return
     conn = connection()
-    st.title("Dashboard")
+    first_name = str(user.get("name") or "Admin").split()[0]
+    st.title(f"Welcome {first_name},")
+    st.caption("P.W AUTOMOBILE - GJ-096-6186, Weija SCC")
     years = cached_reporting_years(conn)
     year = st.selectbox("Reporting year", years or [None], format_func=lambda value: str(value) if value else "All years")
     kpis = cached_kpis(conn)

@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from importlib import reload
+
 import streamlit as st
 
 from src.config import BUSINESS_DETAILS
 from src.ui.app_context import get_app_connection, initialize_state
-from src.ui.navigation import build_navigation, render_sidebar
+from src.ui import navigation as navigation_module
+
+
+# Streamlit can retain imported dependency modules across hot reruns. Reload the
+# small navigation module so removed or reordered pages take effect immediately.
+navigation_module = reload(navigation_module)
 
 
 st.set_page_config(
@@ -18,5 +25,6 @@ st.set_page_config(
 st.logo(str(BUSINESS_DETAILS["logo_path"]), size="large")
 get_app_connection()
 initialize_state()
-render_sidebar()
-build_navigation().run()
+navigation = navigation_module.build_navigation()
+navigation_module.render_sidebar()
+navigation.run()

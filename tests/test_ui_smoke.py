@@ -14,7 +14,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 PAGE_FILES = (
     "app.py",
-    "src/ui/pages/home.py",
     "src/ui/pages/job_cards.py",
     "src/ui/pages/customers.py",
     "src/ui/pages/appointments.py",
@@ -72,6 +71,18 @@ def test_new_job_card_flow_creates_a_job(ui_database: Path) -> None:
     assert any(title.value.startswith("PW-JC-") for title in app.title)
     after = conn.execute("SELECT count(*) FROM job_cards").fetchone()[0]
     assert after == before + 1
+
+
+def test_global_vehicle_search_can_navigate(ui_database: Path) -> None:
+    """Sidebar search registers navigation before switching to a vehicle result."""
+    app = AppTest.from_file(PROJECT_ROOT / "app.py", default_timeout=30).run()
+    quick_search = next(item for item in app.text_input if item.label == "Quick search")
+    quick_search.set_value("GT-911-18").run()
+    vehicle_result = next(
+        item for item in app.button if item.label == "Vehicle: GT-911-18"
+    )
+    vehicle_result.click().run()
+    assert not app.exception
 
 
 def test_every_seeded_job_card_detail_loads(ui_database: Path) -> None:

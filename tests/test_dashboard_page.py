@@ -51,7 +51,7 @@ def test_dashboard_loads_with_sample_data(tmp_path: Path, monkeypatch: pytest.Mo
     _configure_ui_database(path, monkeypatch)
     app = AppTest.from_file(DASHBOARD_PAGE, default_timeout=30).run()
     assert not app.exception
-    assert any(title.value == "Dashboard" for title in app.title)
+    assert any(title.value.startswith("Welcome ") for title in app.title)
 
 
 def test_dashboard_loads_with_empty_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

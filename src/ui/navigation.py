@@ -16,7 +16,6 @@ def render_sidebar() -> None:
     with st.sidebar:
         st.title("P.W Auto Service")
         st.caption(f"{user['name']} · {user['role_name']}")
-        st.caption("Appearance: Settings menu → Theme → Light or Dark")
         query = st.text_input("Quick search", placeholder="Phone, name, VIN or registration")
         if query.strip():
             customers = run_service(search_customers, connection(), query) or []
@@ -40,16 +39,21 @@ def render_sidebar() -> None:
 def build_navigation() -> st.navigation:
     """Create the navigation tree allowed for the current role."""
     user = current_user()
+    can_view_reports = has_permission(user, "revenue_reports")
     pages = [
-        st.Page("src/ui/pages/home.py", title="Home", icon=":material/home:", default=True),
-        st.Page("src/ui/pages/job_cards.py", title="Job Cards", icon=":material/assignment:"),
+        *(
+            [st.Page("src/ui/pages/dashboard.py", title="Dashboard", icon=":material/bar_chart:", default=True)]
+            if can_view_reports else []
+        ),
+        st.Page(
+            "src/ui/pages/job_cards.py", title="Job Cards", icon=":material/assignment:",
+            default=not can_view_reports,
+        ),
         st.Page("src/ui/pages/customers.py", title="Customers & Vehicles", icon=":material/directions_car:"),
         st.Page("src/ui/pages/appointments.py", title="Appointments", icon=":material/calendar_month:"),
         st.Page("src/ui/pages/parts.py", title="Parts & Inventory", icon=":material/inventory_2:"),
         st.Page("src/ui/pages/reminders.py", title="Reminders", icon=":material/notifications:"),
     ]
-    if has_permission(user, "revenue_reports"):
-        pages.append(st.Page("src/ui/pages/dashboard.py", title="Dashboard", icon=":material/bar_chart:"))
     if has_permission(user, "user_management"):
         pages.append(st.Page("src/ui/pages/settings.py", title="Settings", icon=":material/settings:"))
     return st.navigation(pages, position="sidebar")
