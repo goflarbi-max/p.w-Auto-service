@@ -7,7 +7,7 @@ from decimal import Decimal
 import duckdb
 from fpdf.fonts import FontFace
 
-from src.config import PAYMENT_DETAILS
+from src import config as app_config
 from src.documents.common import WorkshopPDF, format_date, format_money
 from src.services.estimates import get_estimate_document_full
 from src.services.invoices import get_invoice_full
@@ -124,8 +124,9 @@ def generate_invoice_pdf(conn: duckdb.DuckDBPyConnection, invoice_id: int) -> by
             f"Balance due: {format_money(balance)}    Status: {data['payment_status']}"
         )
     )
-    if PAYMENT_DETAILS.strip():
-        pdf.multi_cell(0, 5, pdf.clean(f"Payment details: {PAYMENT_DETAILS}"))
+    payment_details = getattr(app_config, "PAYMENT_DETAILS", "")
+    if payment_details.strip():
+        pdf.multi_cell(0, 5, pdf.clean(f"Payment details: {payment_details}"))
     if data.get("notes"):
         pdf.boxed_text("Notes", data["notes"], minimum_height=12)
     return pdf.bytes_output()

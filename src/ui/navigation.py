@@ -16,6 +16,7 @@ def render_sidebar() -> None:
     with st.sidebar:
         st.title("P.W Auto Service")
         st.caption(f"{user['name']} · {user['role_name']}")
+        st.caption("Appearance: Settings menu → Theme → Light or Dark")
         query = st.text_input("Quick search", placeholder="Phone, name, VIN or registration")
         if query.strip():
             customers = run_service(search_customers, connection(), query) or []

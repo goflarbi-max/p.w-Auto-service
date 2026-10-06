@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import logging
 from typing import Any, TypeVar
 
 import duckdb
@@ -14,6 +15,7 @@ from src.services.users import get_user
 
 
 T = TypeVar("T")
+LOGGER = logging.getLogger(__name__)
 
 
 @st.cache_resource
@@ -32,6 +34,7 @@ def initialize_state() -> None:
         "selected_appointment_id": None,
         "job_page_mode": "list",
         "processing": False,
+        "blank_job_card_pdf": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -61,6 +64,7 @@ def run_service(
         st.error(str(exc))
         return None
     except Exception:
+        LOGGER.exception("Unexpected error while running service operation %s", operation.__name__)
         st.error("Something went wrong. Please try again or check the application logs.")
         return None
     if success:
@@ -73,6 +77,9 @@ def rerun_after_write(message: str) -> None:
     from src.ui.dashboard_cache import clear_dashboard_cache
 
     clear_dashboard_cache()
+    for key in tuple(st.session_state):
+        if str(key).startswith("document_pdf_"):
+            del st.session_state[key]
     st.session_state.processing = False
     st.toast(message)
     st.rerun()

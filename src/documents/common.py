@@ -9,13 +9,18 @@ from typing import Any
 
 from fpdf import FPDF
 
-from src.config import (
-    BUSINESS_DETAILS,
-    DOCUMENT_ACCENT_COLOR,
-    DOCUMENT_FONT_BOLD,
-    DOCUMENT_FONT_REGULAR,
-    DOCUMENT_FOOTER,
+from src import config as app_config
+
+
+BUSINESS_DETAILS = app_config.BUSINESS_DETAILS
+DOCUMENT_ACCENT_COLOR = getattr(app_config, "DOCUMENT_ACCENT_COLOR", "#2F5D62")
+DOCUMENT_FONT_REGULAR = getattr(
+    app_config, "DOCUMENT_FONT_REGULAR", app_config.PROJECT_ROOT / "assets" / "fonts" / "DejaVuSans.ttf"
 )
+DOCUMENT_FONT_BOLD = getattr(
+    app_config, "DOCUMENT_FONT_BOLD", app_config.PROJECT_ROOT / "assets" / "fonts" / "DejaVuSans-Bold.ttf"
+)
+DOCUMENT_FOOTER = getattr(app_config, "DOCUMENT_FOOTER", "Thank you for your business")
 
 
 def format_money(value: Decimal | int | str | None) -> str:
@@ -64,8 +69,8 @@ class WorkshopPDF(FPDF):
         logo = Path(self.business.get("logo_path", ""))
         if logo.is_file():
             try:
-                self.image(str(logo), x=14, y=10, w=24, h=18, keep_aspect_ratio=True)
-                left = 42
+                self.image(str(logo), x=14, y=8, w=28, h=22, keep_aspect_ratio=True)
+                left = 46
             except Exception:
                 left = 14
         else:
@@ -90,7 +95,7 @@ class WorkshopPDF(FPDF):
         self.set_xy(left, 17)
         self.set_font(self.font_family, "", 8)
         self.multi_cell(90, 4, self.clean(" · ".join(str(item) for item in address_lines if item)))
-        self.set_y(31)
+        self.set_y(34)
         self.set_draw_color(*self.accent)
         self.set_line_width(0.6)
         self.line(14, self.get_y(), 196, self.get_y())

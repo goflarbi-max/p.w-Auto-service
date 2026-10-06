@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import pandas as pd
 import streamlit as st
@@ -32,6 +32,7 @@ from src.services.estimates import (
     send_estimate,
 )
 from src.services.invoices import create_invoice, get_invoice_full, record_payment
+from src.services.errors import ValidationError
 from src.services.job_cards import (
     change_status,
     get_allowed_status_transitions,
@@ -62,16 +63,62 @@ def _open_detail(job_id: int) -> None:
     st.rerun()
 
 
+def _parse_estimate_items(edited: pd.DataFrame) -> list[dict]:
+    """Convert complete editor rows to service inputs without crashing on blank rows."""
+    items: list[dict] = []
+    for index, row in edited.iterrows():
+        item_type = "" if pd.isna(row.get("item_type")) else str(row["item_type"]).strip()
+        description = "" if pd.isna(row.get("description")) else str(row["description"]).strip()
+        part_value = row.get("part_id")
+        quantity_value = row.get("quantity")
+        price_value = row.get("unit_price")
+        values = (item_type, description, part_value, quantity_value, price_value)
+        if all(value == "" or pd.isna(value) for value in values):
+            continue
+        row_number = int(index) + 1 if isinstance(index, int) else len(items) + 1
+        if item_type not in {"Labour", "Part"} or not description:
+            raise ValidationError(
+                f"Estimate row {row_number} needs a type and description."
+            )
+        try:
+            quantity = Decimal(str(quantity_value))
+            unit_price = Decimal(str(price_value))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError(
+                f"Estimate row {row_number} needs a valid quantity and unit price."
+            ) from None
+        if not quantity.is_finite() or not unit_price.is_finite():
+            raise ValidationError(
+                f"Estimate row {row_number} needs a valid quantity and unit price."
+            )
+        items.append({
+            "item_type": item_type,
+            "description": description,
+            "part_id": None if pd.isna(part_value) else int(part_value),
+            "quantity": quantity,
+            "unit_price": unit_price,
+        })
+    if not items:
+        raise ValidationError("Add at least one complete estimate item before saving.")
+    return items
+
+
 def _render_list() -> None:
     st.title("Job Cards")
     if st.button("New Job Card", key="new_job_button", type="primary", use_container_width=True):
         st.session_state.job_page_mode = "new"
         st.rerun()
-    blank_pdf = run_service(generate_blank_job_card)
-    if blank_pdf:
+    if st.button(
+        "Prepare blank job card PDF",
+        key="prepare_blank_job_card",
+        use_container_width=True,
+    ):
+        st.session_state.blank_job_card_pdf = run_service(generate_blank_job_card)
+    blank_pdf = st.session_state.get("blank_job_card_pdf")
+    if blank_pdf is not None:
         st.download_button(
             "Print blank job card", data=blank_pdf, file_name=blank_job_card_filename(),
-            mime="application/pdf", use_container_width=True,
+            mime="application/pdf", use_container_width=True, on_click="ignore",
         )
     query = st.text_input("Search", placeholder="Job no, registration, VIN or customer")
     status = st.selectbox(
@@ -194,18 +241,27 @@ def _render_new() -> None:
 def _render_estimate(job: dict) -> None:
     conn, user = connection(), current_user()
     estimates = job["estimates"]
-    latest = get_estimate_full(conn, estimates[0]["id"]) if estimates else None
+    latest = run_service(get_estimate_full, conn, estimates[0]["id"]) if estimates else None
     if latest:
         status_badge(latest["status"])
         st.write(f"Version {latest['version']} · {money(latest['totals']['total'])}")
         for item in latest["items"]:
             st.write(f"{item['item_type']}: {item['description']} — {item['quantity']} × {money(item['unit_price'])}")
-        estimate_pdf = run_service(generate_estimate_pdf, conn, latest["id"])
+        estimate_key = f"document_pdf_estimate_{latest['id']}"
+        if st.button(
+            "Prepare Estimate PDF",
+            key=f"prepare_estimate_{latest['id']}",
+            use_container_width=True,
+        ):
+            st.session_state[estimate_key] = run_service(
+                generate_estimate_pdf, conn, latest["id"]
+            )
+        estimate_pdf = st.session_state.get(estimate_key)
         if estimate_pdf:
             st.download_button(
                 "Download Estimate PDF", data=estimate_pdf,
                 file_name=estimate_filename(job["job_no"], latest["version"]),
-                mime="application/pdf", use_container_width=True,
+                mime="application/pdf", use_container_width=True, on_click="ignore",
             )
     rows = pd.DataFrame([
         {"item_type": "Labour", "description": "Workshop labour", "part_id": None,
@@ -213,20 +269,29 @@ def _render_estimate(job: dict) -> None:
     ])
     edited = st.data_editor(
         rows, num_rows="dynamic", use_container_width=True, key=f"estimate_editor_{job['id']}",
-        column_config={"item_type": st.column_config.SelectboxColumn(options=["Labour", "Part"])},
+        column_config={
+            "item_type": st.column_config.SelectboxColumn(
+                options=["Labour", "Part"], required=True,
+            ),
+            "description": st.column_config.TextColumn(required=True),
+            "quantity": st.column_config.NumberColumn(min_value=0.01, required=True),
+            "unit_price": st.column_config.NumberColumn(min_value=0.0, required=True),
+        },
     )
-    items = [
-        {"item_type": row["item_type"], "description": row["description"],
-         "part_id": None if pd.isna(row["part_id"]) else int(row["part_id"]),
-         "quantity": Decimal(str(row["quantity"])), "unit_price": Decimal(str(row["unit_price"]))}
-        for _, row in edited.iterrows()
-    ]
-    if latest is None and st.button("Save Estimate", use_container_width=True):
-        if run_service(create_estimate, conn, job["id"], items, user_id=user["id"]):
-            rerun_after_write("Estimate saved")
-    elif latest and latest["status"] != "Approved" and st.button("Save Revision", use_container_width=True):
-        if run_service(revise_estimate, conn, job["id"], items, user_id=user["id"]):
-            rerun_after_write("Estimate revision saved")
+    save_label = "Save Estimate" if latest is None else "Save Revision"
+    can_save = latest is None or latest["status"] != "Approved"
+    if can_save and st.button(save_label, use_container_width=True):
+        try:
+            items = _parse_estimate_items(edited)
+        except ValidationError as exc:
+            st.error(str(exc))
+        else:
+            operation = create_estimate if latest is None else revise_estimate
+            result = run_service(operation, conn, job["id"], items, user_id=user["id"])
+            if result:
+                rerun_after_write(
+                    "Estimate saved" if latest is None else "Estimate revision saved"
+                )
     if latest and latest["status"] == "Draft" and st.button("Send Estimate", type="primary", use_container_width=True):
         if run_service(send_estimate, conn, latest["id"], user_id=user["id"]):
             rerun_after_write("Estimate sent")
@@ -301,12 +366,19 @@ def _render_invoice(job: dict) -> None:
         if st.button("Record Payment", type="primary", use_container_width=True):
             if run_service(record_payment, conn, full["id"], Decimal(str(amount)), method, user_id=user["id"]):
                 rerun_after_write("Payment recorded")
-    invoice_pdf = run_service(generate_invoice_pdf, conn, full["id"])
+    invoice_key = f"document_pdf_invoice_{full['id']}"
+    if st.button(
+        "Prepare Invoice PDF",
+        key=f"prepare_invoice_{full['id']}",
+        use_container_width=True,
+    ):
+        st.session_state[invoice_key] = run_service(generate_invoice_pdf, conn, full["id"])
+    invoice_pdf = st.session_state.get(invoice_key)
     if invoice_pdf:
         st.download_button(
             "Download Invoice PDF", data=invoice_pdf,
             file_name=invoice_filename(full["invoice_no"]), mime="application/pdf",
-            use_container_width=True,
+            use_container_width=True, on_click="ignore",
         )
 
 
@@ -345,12 +417,21 @@ def _render_detail() -> None:
         ["Overview", "Diagnosis", "Estimate", "Parts Used", "Invoice", "History"]
     )
     with overview:
-        job_pdf = run_service(generate_job_card_pdf, connection(), job["id"])
+        job_pdf_key = f"document_pdf_job_card_{job['id']}"
+        if st.button(
+            "Prepare Job Card PDF",
+            key=f"prepare_job_card_{job['id']}",
+            use_container_width=True,
+        ):
+            st.session_state[job_pdf_key] = run_service(
+                generate_job_card_pdf, connection(), job["id"]
+            )
+        job_pdf = st.session_state.get(job_pdf_key)
         if job_pdf:
             st.download_button(
                 "Download Job Card PDF", data=job_pdf,
                 file_name=job_card_filename(job["job_no"]), mime="application/pdf",
-                use_container_width=True,
+                use_container_width=True, on_click="ignore",
             )
         with st.form(f"overview_{job['id']}"):
             complaint = st.text_area("Complaint", value=job["customer_complaint"])

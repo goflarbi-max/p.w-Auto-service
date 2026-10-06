@@ -72,3 +72,21 @@ def test_new_job_card_flow_creates_a_job(ui_database: Path) -> None:
     assert any(title.value.startswith("PW-JC-") for title in app.title)
     after = conn.execute("SELECT count(*) FROM job_cards").fetchone()[0]
     assert after == before + 1
+
+
+def test_every_seeded_job_card_detail_loads(ui_database: Path) -> None:
+    """Every seeded status and its related detail sections render cleanly."""
+    import src.ui.app_context as app_context
+
+    conn = app_context.get_app_connection()
+    job_ids = [row[0] for row in conn.execute("SELECT id FROM job_cards ORDER BY id").fetchall()]
+
+    for job_id in job_ids:
+        app = AppTest.from_file(
+            PROJECT_ROOT / "src" / "ui" / "pages" / "job_cards.py",
+            default_timeout=45,
+        )
+        app.session_state["job_page_mode"] = "detail"
+        app.session_state["selected_job_card_id"] = job_id
+        app.run()
+        assert not app.exception, f"Job Card {job_id} failed to render"
