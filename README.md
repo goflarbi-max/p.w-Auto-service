@@ -154,8 +154,12 @@ HTTPS and the planned hosted deployment for production access.
 ## PDF documents
 
 The Job Card page provides downloads for invoices, estimate versions, populated
-job cards, and a printable blank job card. Generators live in `src/documents/`
-and return PDF bytes; UI pages do not construct document layouts or query data.
+job cards, a printable blank job card, and a branded receipt for every recorded
+payment. The newest receipt is prepared immediately after payment; earlier
+receipts can be prepared again from the invoice payment history. Downloaded
+receipt PDFs can be printed from the browser or a PDF viewer. Generators live in
+`src/documents/` and return PDF bytes; UI pages do not construct document layouts
+or query data.
 
 Sample PDFs are generated under `docs/samples/` and include the configured
 workshop logo aligned in the document header. If the logo file is absent or

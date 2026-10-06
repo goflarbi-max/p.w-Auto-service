@@ -13,7 +13,9 @@ from src.documents.invoice_pdf import (
     estimate_filename,
     generate_estimate_pdf,
     generate_invoice_pdf,
+    generate_receipt_pdf,
     invoice_filename,
+    receipt_filename,
 )
 from src.documents.job_card_pdf import (
     blank_job_card_filename,
@@ -357,14 +359,48 @@ def _render_invoice(job: dict) -> None:
     status_badge(full["payment_status"])
     st.write(f"Total: **{money(full['total'])}**")
     st.write(f"Paid: {money(full['amount_paid'])}")
+    latest_payment_id = st.session_state.get("latest_receipt_payment_id")
     for payment in full["payments"]:
-        st.caption(f"{payment['method']} · {money(payment['amount'])}")
+        with st.container(border=True):
+            st.write(f"**{payment['method']} · {money(payment['amount'])}**")
+            st.caption(f"Paid {payment['paid_at']:%d %b %Y %H:%M}")
+            receipt_key = f"document_pdf_receipt_{payment['id']}"
+            if latest_payment_id == payment["id"] and not st.session_state.get(receipt_key):
+                st.session_state[receipt_key] = run_service(
+                    generate_receipt_pdf, conn, payment["id"]
+                )
+                st.session_state.pop("latest_receipt_payment_id", None)
+            if st.button(
+                "Prepare Receipt PDF",
+                key=f"prepare_receipt_{payment['id']}",
+                use_container_width=True,
+            ):
+                st.session_state[receipt_key] = run_service(
+                    generate_receipt_pdf, conn, payment["id"]
+                )
+            receipt_pdf = st.session_state.get(receipt_key)
+            if receipt_pdf:
+                receipt_no = f"PW-RCT-{payment['id']:06d}"
+                st.download_button(
+                    "Download / Print Receipt",
+                    data=receipt_pdf,
+                    file_name=receipt_filename(receipt_no),
+                    mime="application/pdf",
+                    key=f"download_receipt_{payment['id']}",
+                    use_container_width=True,
+                    on_click="ignore",
+                )
     if full["payment_status"] != "Paid" and has_permission(user, "payments"):
         outstanding = full["total"] - full["amount_paid"]
         amount = st.number_input("Payment amount", min_value=0.01, max_value=float(outstanding), value=float(outstanding))
         method = st.selectbox("Payment method", PAYMENT_METHODS)
         if st.button("Record Payment", type="primary", use_container_width=True):
-            if run_service(record_payment, conn, full["id"], Decimal(str(amount)), method, user_id=user["id"]):
+            result = run_service(
+                record_payment, conn, full["id"], Decimal(str(amount)), method,
+                user_id=user["id"],
+            )
+            if result:
+                st.session_state.latest_receipt_payment_id = result["payment_id"]
                 rerun_after_write("Payment recorded")
     invoice_key = f"document_pdf_invoice_{full['id']}"
     if st.button(

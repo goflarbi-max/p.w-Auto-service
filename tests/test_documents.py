@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal
 from pathlib import Path
 
 import duckdb
@@ -14,7 +15,9 @@ from src.documents.invoice_pdf import (
     estimate_filename,
     generate_estimate_pdf,
     generate_invoice_pdf,
+    generate_receipt_pdf,
     invoice_filename,
+    receipt_filename,
 )
 from src.documents.job_card_pdf import (
     blank_job_card_filename,
@@ -22,6 +25,7 @@ from src.documents.job_card_pdf import (
     generate_job_card_pdf,
     job_card_filename,
 )
+from src.services.invoices import get_payment_receipt, record_payment
 
 
 @pytest.fixture()
@@ -84,8 +88,22 @@ def test_blank_job_card_generates() -> None:
     assert generate_blank_job_card().startswith(b"%PDF")
 
 
+def test_payment_receipt_contains_historical_balance(document_conn) -> None:
+    """Each payment produces a stable printable receipt snapshot."""
+    first = record_payment(document_conn, 2, Decimal("100.00"), "Cash", user_id=1)
+    receipt = get_payment_receipt(document_conn, first["payment_id"])
+    content = generate_receipt_pdf(document_conn, first["payment_id"])
+
+    assert receipt["receipt_no"] == f"PW-RCT-{first['payment_id']:06d}"
+    assert receipt["paid_to_date"] == Decimal("100.00")
+    assert receipt["balance_after"] == Decimal("3750.00")
+    assert content.startswith(b"%PDF")
+    assert len(content) > 1_000
+
+
 def test_document_filenames() -> None:
     assert invoice_filename("PW-INV-2026-0001") == "PW-INV-2026-0001.pdf"
+    assert receipt_filename("PW-RCT-000001") == "PW-RCT-000001.pdf"
     assert estimate_filename("PW-JC-2026-0001", 2) == "PW-EST-2026-0001-v2.pdf"
     assert job_card_filename("PW-JC-2026-0001") == "PW-JC-2026-0001.pdf"
     assert blank_job_card_filename() == "PW-JC-BLANK.pdf"

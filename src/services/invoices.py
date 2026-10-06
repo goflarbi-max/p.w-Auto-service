@@ -162,3 +162,38 @@ def get_invoice_full(conn: duckdb.DuckDBPyConnection, invoice_id: int) -> dict[s
             "unit_price": invoice["labour_total"], "line_total": invoice["labour_total"],
         }]
     return invoice
+
+
+def get_payment_receipt(
+    conn: duckdb.DuckDBPyConnection, payment_id: int,
+) -> dict[str, Any]:
+    """Return a historical payment snapshot suitable for a receipt."""
+    receipt = require_record(fetch_one(conn.execute(
+        """
+        SELECT ip.*, i.invoice_no, i.issue_date, i.total AS invoice_total,
+               jc.job_no, c.name AS customer_name, c.phone,
+               v.brand, v.model, v.reg_number,
+               u.name AS recorded_by_name,
+               (SELECT coalesce(sum(previous.amount), 0)
+                FROM invoice_payments previous
+                WHERE previous.invoice_id = ip.invoice_id
+                  AND (previous.paid_at < ip.paid_at OR
+                       (previous.paid_at = ip.paid_at AND previous.id <= ip.id)))
+                   AS paid_to_date
+        FROM invoice_payments ip
+        JOIN invoices i ON i.id = ip.invoice_id
+        JOIN job_cards jc ON jc.id = i.job_card_id
+        JOIN customers c ON c.id = jc.customer_id
+        JOIN vehicles v ON v.id = jc.vehicle_id
+        LEFT JOIN users u ON u.id = ip.recorded_by
+        WHERE ip.id = ?
+        """, [payment_id]
+    )), "Payment")
+    receipt["balance_after"] = receipt["invoice_total"] - receipt["paid_to_date"]
+    receipt["payment_status_after"] = (
+        "Paid" if receipt["balance_after"] == 0 else "Partial"
+    )
+    receipt["receipt_no"] = f"PW-RCT-{receipt['id']:06d}"
+    receipt["business"] = BUSINESS_DETAILS.copy()
+    receipt["currency"] = CURRENCY
+    return receipt

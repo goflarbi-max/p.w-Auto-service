@@ -10,7 +10,7 @@ from fpdf.fonts import FontFace
 from src import config as app_config
 from src.documents.common import WorkshopPDF, format_date, format_money
 from src.services.estimates import get_estimate_document_full
-from src.services.invoices import get_invoice_full
+from src.services.invoices import get_invoice_full, get_payment_receipt
 
 
 def invoice_filename(invoice_no: str) -> str:
@@ -21,6 +21,11 @@ def invoice_filename(invoice_no: str) -> str:
 def estimate_filename(job_no: str, version: int) -> str:
     """Return the required estimate download filename."""
     return f"{job_no.replace('PW-JC-', 'PW-EST-')}-v{version}.pdf"
+
+
+def receipt_filename(receipt_no: str) -> str:
+    """Return the payment receipt download filename."""
+    return f"{receipt_no}.pdf"
 
 
 def _party_and_vehicle(pdf: WorkshopPDF, data: dict) -> None:
@@ -129,6 +134,53 @@ def generate_invoice_pdf(conn: duckdb.DuckDBPyConnection, invoice_id: int) -> by
         pdf.multi_cell(0, 5, pdf.clean(f"Payment details: {payment_details}"))
     if data.get("notes"):
         pdf.boxed_text("Notes", data["notes"], minimum_height=12)
+    return pdf.bytes_output()
+
+
+def generate_receipt_pdf(conn: duckdb.DuckDBPyConnection, payment_id: int) -> bytes:
+    """Generate a branded printable receipt for one recorded payment."""
+    data = get_payment_receipt(conn, payment_id)
+    pdf = WorkshopPDF(title="PAYMENT RECEIPT", business=data["business"])
+    pdf.add_page()
+    pdf.set_font(pdf.font_family, "B", 10)
+    pdf.cell(91, 7, pdf.clean(f"Receipt No: {data['receipt_no']}"))
+    paid_at = data["paid_at"].strftime("%d %b %Y %H:%M")
+    pdf.cell(91, 7, pdf.clean(f"Paid: {paid_at}"), align="R")
+    pdf.ln(9)
+
+    pdf.section_title("Payment Received From")
+    pdf.label_value("Customer", data["customer_name"])
+    pdf.label_value("Phone", data.get("phone"))
+    pdf.ln(6)
+    pdf.label_value("Vehicle", f"{data['brand']} {data['model']}")
+    pdf.label_value("Registration", data.get("reg_number"))
+    pdf.ln(8)
+
+    pdf.section_title("Reference")
+    pdf.label_value("Invoice", data["invoice_no"])
+    pdf.label_value("Job Card", data["job_no"])
+    pdf.ln(8)
+
+    pdf.section_title("Payment Details")
+    pdf.set_font(pdf.font_family, "B", 14)
+    pdf.cell(120, 9, "Amount received")
+    pdf.cell(62, 9, format_money(data["amount"]), align="R")
+    pdf.ln(10)
+    pdf.set_font(pdf.font_family, "", 9)
+    for label, value in (
+        ("Payment method", data["method"]),
+        ("Invoice total", format_money(data["invoice_total"])),
+        ("Total paid after payment", format_money(data["paid_to_date"])),
+        ("Balance after payment", format_money(data["balance_after"])),
+        ("Payment status", data["payment_status_after"]),
+        ("Received by", data.get("recorded_by_name") or "System"),
+    ):
+        pdf.cell(90, 6, pdf.clean(label))
+        pdf.cell(92, 6, pdf.clean(value), align="R")
+        pdf.ln(6)
+    pdf.ln(5)
+    pdf.set_font(pdf.font_family, "B", 10)
+    pdf.multi_cell(0, 6, "Thank you. This document confirms receipt of payment.", align="C")
     return pdf.bytes_output()
 
 
