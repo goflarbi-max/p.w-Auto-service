@@ -4,19 +4,29 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal, InvalidOperation
+from importlib import import_module, reload
 
 import pandas as pd
 import streamlit as st
 
 from src.config import PAYMENT_METHODS
-from src.documents.invoice_pdf import (
-    estimate_filename,
-    generate_estimate_pdf,
-    generate_invoice_pdf,
-    generate_receipt_pdf,
-    invoice_filename,
-    receipt_filename,
-)
+from src.services import invoices as invoice_service
+
+
+# Streamlit may retain dependency modules while hot-reloading this page. Refresh
+# only when the newly deployed receipt APIs are absent from the running process.
+if not hasattr(invoice_service, "get_payment_receipt"):
+    invoice_service = reload(invoice_service)
+invoice_documents = import_module("src.documents.invoice_pdf")
+if not hasattr(invoice_documents, "generate_receipt_pdf"):
+    invoice_documents = reload(invoice_documents)
+
+estimate_filename = invoice_documents.estimate_filename
+generate_estimate_pdf = invoice_documents.generate_estimate_pdf
+generate_invoice_pdf = invoice_documents.generate_invoice_pdf
+generate_receipt_pdf = invoice_documents.generate_receipt_pdf
+invoice_filename = invoice_documents.invoice_filename
+receipt_filename = invoice_documents.receipt_filename
 from src.documents.job_card_pdf import (
     blank_job_card_filename,
     generate_blank_job_card,
@@ -33,7 +43,9 @@ from src.services.estimates import (
     revise_estimate,
     send_estimate,
 )
-from src.services.invoices import create_invoice, get_invoice_full, record_payment
+create_invoice = invoice_service.create_invoice
+get_invoice_full = invoice_service.get_invoice_full
+record_payment = invoice_service.record_payment
 from src.services.errors import ValidationError
 from src.services.job_cards import (
     change_status,
